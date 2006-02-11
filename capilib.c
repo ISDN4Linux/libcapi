@@ -1740,8 +1740,10 @@ capi_message_decoded_to_string(u_int8_t *dst, u_int16_t len,
 	break;
 
       case IE_QWORD:
-	temp = snprintf(dst, len, "  QWORD      %-20s= 0x%016llx\n",
-			ptr->field, ((u_int64_t *)(var))[0]);
+	temp = snprintf(dst, len, "  QWORD      %-20s= 0x%08x%08x\n",
+			ptr->field, 
+			(u_int32_t)(((u_int64_t *)(var))[0] >> 32),
+			(u_int32_t)(((u_int64_t *)(var))[0] >> 0));
 	break;
 
       case IE_STRUCT:
