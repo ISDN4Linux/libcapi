@@ -34,11 +34,11 @@
 
 /* system includes */
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/types.h>
 #include <sys/uio.h>
 #include <sys/time.h>
 #include <sys/endian.h>
@@ -53,8 +53,7 @@
 
 #define CAPI_MAKE_IOCTL
 
-/* CAPI 2.0 include */
-#include <i4b/include/capi20.h>
+#include "capi20.h"
 
 #include "capilib.h"
 

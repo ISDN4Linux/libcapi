@@ -38,11 +38,11 @@
 
 /* system includes */
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/types.h>
 #include <sys/uio.h>
 #include <sys/time.h>
 #include <sys/endian.h>
@@ -54,11 +54,11 @@
 
 #define CAPI_MAKE_IOCTL
 
-#include <i4b/include/capi20.h>
-#include <i4b/include/i4b_ioctl.h>
-#include <i4b/include/i4b_cause.h>
+#include "capi20.h"
 
 #include "capilib.h"
+
+#include "i4b_cause.h"
 
 static struct app_softc *app_sc_root;
 
@@ -217,8 +217,10 @@ capilib_do_ioctl_sub(struct app_softc *sc, uint32_t cmd, void *data)
 	switch (sc->sc_backend) {
 	case CAPI_BACKEND_TYPE_I4B:
 	    return (ioctl(sc->sc_fd, cmd, data));
+#ifdef HAVE_BINTEC
 	case CAPI_BACKEND_TYPE_BINTEC:
 	    return (capilib_bintec_do_ioctl(sc, cmd, data));
+#endif
 	default:
 	    return (-1);
 	}
@@ -330,9 +332,11 @@ capilib_alloc_app(struct capi20_backend *cbe)
 	case CAPI_BACKEND_TYPE_I4B:
 		sc = capilib_alloc_app_i4b(cbe);
 		break;
+#ifdef HAVE_BINTEC
 	case CAPI_BACKEND_TYPE_BINTEC:
 		sc = capilib_alloc_app_bintec(cbe);
 		break;
+#endif
 	default:
 		sc = NULL;
 		break;
@@ -650,9 +654,13 @@ capi20_put_message(uint32_t app_id, void *buf_ptr)
 	app_id_old = HEADER_APP(pmsg);
 	HEADER_APP(pmsg) = sc->sc_app_id_real;
 
-	if (sc->sc_backend == CAPI_BACKEND_TYPE_BINTEC) {
-		uint32_t temp;
-	  
+	switch (sc->sc_backend) {
+#ifdef HAVE_BINTEC
+	uint32_t temp;
+#endif
+
+#ifdef HAVE_BINTEC
+	case CAPI_BACKEND_TYPE_BINTEC:	  
 		temp = (iov[1].iov_len + 
 			iov[2].iov_len) + 2;
 
@@ -675,9 +683,12 @@ capi20_put_message(uint32_t app_id, void *buf_ptr)
 
 		iov[0].iov_base = (void *)(sc->sc_temp);
 		iov[0].iov_len = 2; /* bytes */
-	} else {
+		break;
+#endif
+	default:
 		iov[0].iov_base = NULL;
 		iov[0].iov_len = 0;
+		break;
 	}
 
 	while (writev(sc->sc_fd, iov, 3) < 0)
@@ -693,8 +704,9 @@ capi20_put_message(uint32_t app_id, void *buf_ptr)
 
 	    break;
 	}
-
+#ifdef HAVE_BINTEC
  done:
+#endif
 	/* restore application ID in case the 
 	 * application is reusing this message
 	 */
@@ -720,10 +732,11 @@ capi20_put_message(uint32_t app_id, void *buf_ptr)
 int
 capilib_get_message_sub(struct app_softc *sc, void *buf, uint16_t msg_len)
 {
-	uint16_t temp;
 	int len;
 
+#ifdef HAVE_BINTEC
 	if (sc->sc_backend == CAPI_BACKEND_TYPE_BINTEC) {
+		uint16_t temp;
 
 	    /* need to get the length bytes first */
 	    while ((len = read(sc->sc_fd, sc->sc_temp, 2)) < 0) {
@@ -750,6 +763,7 @@ capilib_get_message_sub(struct app_softc *sc, void *buf, uint16_t msg_len)
 	        msg_len = temp;
 	    }
 	}
+#endif
 
 	while ((len = read(sc->sc_fd, buf, msg_len)) < 0) {
 	    if (errno == EINTR) {
@@ -1411,13 +1425,13 @@ capi20_fileno(uint32_t app_id)
  *---------------------------------------------------------------------------*/
 uint16_t
 capi_firmware_download(struct capi20_backend *cbe, uint32_t controller, 
-  struct isdn_dr_prot *protocols_ptr, uint16_t protocols_len)
+  const struct capi20_dr_prot *protocols_ptr, uint16_t protocols_len)
 {
-	struct isdn_download_request req;
+	struct capi20_download_request req;
 
 	memset(&req, 0, sizeof(req));
 
-	if(protocols_ptr == NULL) 
+	if (protocols_ptr == NULL || protocols_len == 0) 
 	{
 	    /* nothing to do */
 	    return 0;
@@ -1427,7 +1441,7 @@ capi_firmware_download(struct capi20_backend *cbe, uint32_t controller,
 	req.numprotos = protocols_len;
 	req.protocols = protocols_ptr;
 
-	return (capilib_do_ioctl(cbe, I4B_CTRL_DOWNLOAD, &req));
+	return (capilib_do_ioctl(cbe, CAPI_CTRL_DOWNLOAD, &req));
 }
 
 /*---------------------------------------------------------------------------*
@@ -1592,7 +1606,7 @@ capi_translate_from_message_decoded(struct capi_message_decoded *mp,
 			   buf_len - len, &(mp->data));
 
 	/* update length */
-	((u_int16_p_t *)(buf_ptr))->data = htole16(len);
+	((uint16_p_t *)(buf_ptr))->data = htole16(len);
 
 	return;
 }
@@ -1641,8 +1655,13 @@ capi20_get_errstr(uint16_t wError)
 
 	const struct error *ptr = &errors[0];
 
-	static const char *
-	  MAKE_TABLE(Q850_CAUSES,DESC,[0x80]);
+#define	Q850_MAKE_CAUSES_TABLE(...) \
+	Q850_CAUSES_DESC(__VA_ARGS__),
+
+	static const char * Q850_CAUSES_DESC[0x80] =
+	{
+	    Q850_CAUSES(Q850_MAKE_CAUSES_TABLE)
+	};
 
 	if(wError == 0)
 	{
@@ -1868,19 +1887,19 @@ capi_message_decoded_to_string(char *dst, uint16_t len,
 
       case IE_WORD:
 	temp = snprintf(dst, len, "  WORD       %-20s= 0x%04x\n",
-			ptr->field, ((u_int16_p_t *)(var))->data);
+			ptr->field, ((uint16_p_t *)(var))->data);
 	break;
 
       case IE_DWORD:
 	temp = snprintf(dst, len, "  DWORD      %-20s= 0x%08x\n",
-			ptr->field, ((u_int32_p_t *)(var))->data);
+			ptr->field, ((uint32_p_t *)(var))->data);
 	break;
 
       case IE_QWORD:
 	temp = snprintf(dst, len, "  QWORD      %-20s= 0x%08x%08x\n",
 			ptr->field, 
-			(uint32_t)(((u_int64_p_t *)(var))->data >> 32),
-			(uint32_t)(((u_int64_p_t *)(var))->data >> 0));
+			(uint32_t)(((uint64_p_t *)(var))->data >> 32),
+			(uint32_t)(((uint64_p_t *)(var))->data >> 0));
 	break;
 
       case IE_STRUCT:
@@ -1998,45 +2017,45 @@ capi20_decode(void *ptr, uint16_t len, void *ie)
 	  case IE_WORD:
 	    if(len >= 2)
 	    {
-	      ((u_int16_p_t *)(ie))->data =
-		le16toh(((u_int16_p_t *)(ptr))->data);
+	      ((uint16_p_t *)(ie))->data =
+		le16toh(((uint16_p_t *)(ptr))->data);
 
 	      ie = ADD_BYTES(ie, 2);
 	      ptr = ADD_BYTES(ptr, 2);
 	      len -= 2;
 	      break;
 	    }
-	    ((u_int16_p_t *)(ie))->data = 0;
+	    ((uint16_p_t *)(ie))->data = 0;
 	    ie = ADD_BYTES(ie, 2);
 	    goto ie_error;
 
 	  case IE_DWORD:
 	    if(len >= 4)
 	    {
-	      ((u_int32_p_t *)(ie))->data =
-		le32toh(((u_int32_p_t *)(ptr))->data);
+	      ((uint32_p_t *)(ie))->data =
+		le32toh(((uint32_p_t *)(ptr))->data);
 
 	      ie = ADD_BYTES(ie, 4);
 	      ptr = ADD_BYTES(ptr, 4);
 	      len -= 4;
 	      break;
 	    }
-	    ((u_int32_p_t *)(ie))->data = 0;
+	    ((uint32_p_t *)(ie))->data = 0;
 	    ie = ADD_BYTES(ie, 4);
 	    goto ie_error;
 
 	  case IE_QWORD:
 	    if(len >= 8)
 	    {
-	      ((u_int64_p_t *)(ie))->data = 
-		le64toh(((u_int64_p_t *)(ptr))->data);
+	      ((uint64_p_t *)(ie))->data = 
+		le64toh(((uint64_p_t *)(ptr))->data);
 
 	      ie = ADD_BYTES(ie, 8);
 	      ptr = ADD_BYTES(ptr, 8);
 	      len -= 8;
 	      break;
 	    }
-	    ((u_int64_p_t *)(ie))->data = 0;
+	    ((uint64_p_t *)(ie))->data = 0;
 	    ie = ADD_BYTES(ie, 8);
 	    goto ie_error;
 
@@ -2104,7 +2123,7 @@ capi20_decode(void *ptr, uint16_t len, void *ie)
 	      /* store length */
 	      if(what == IE_STRUCT)
 	      {
-		  ((u_int16_p_t *)(ie))->data = temp;
+		  ((uint16_p_t *)(ie))->data = temp;
 		  ie = ADD_BYTES(ie, 2);
 
 		  /* store pointer to data structure */
@@ -2113,7 +2132,7 @@ capi20_decode(void *ptr, uint16_t len, void *ie)
 	      else
 	      {
 		  /* this field should not be used */
-		  ((u_int16_p_t *)(ie))->data = 0;
+		  ((uint16_p_t *)(ie))->data = 0;
 		  ie = ADD_BYTES(ie, 2);
 
 		  /* ((void_p_t *)(ie))->data should already have
@@ -2161,7 +2180,7 @@ capi20_decode(void *ptr, uint16_t len, void *ie)
 	    {
 	      register uint16_t temp;
 
-	      temp = ((u_int16_p_t *)(ie))->data;
+	      temp = ((uint16_p_t *)(ie))->data;
 
 	      ie = ADD_BYTES(ie, 2);
 
@@ -2226,8 +2245,8 @@ capi20_encode(void *ptr, uint16_t len, void *ie)
 	  case IE_WORD:
 	    if(len < 2) goto error; /* overflow */
 
-	    ((u_int16_p_t *)(ptr))->data =
-	      htole16(((u_int16_p_t *)(ie))->data);
+	    ((uint16_p_t *)(ptr))->data =
+	      htole16(((uint16_p_t *)(ie))->data);
 	    ie = ADD_BYTES(ie, 2);
 	    ptr = ADD_BYTES(ptr, 2);
 	    len -= 2;
@@ -2236,8 +2255,8 @@ capi20_encode(void *ptr, uint16_t len, void *ie)
 	  case IE_DWORD:
 	    if(len < 4) goto error; /* overflow */
 
-	    ((u_int32_p_t *)(ptr))->data =
-	      htole32(((u_int32_p_t *)(ie))->data);
+	    ((uint32_p_t *)(ptr))->data =
+	      htole32(((uint32_p_t *)(ie))->data);
 	    ie = ADD_BYTES(ie, 4);
 	    ptr = ADD_BYTES(ptr, 4);
 	    len -= 4;
@@ -2246,8 +2265,8 @@ capi20_encode(void *ptr, uint16_t len, void *ie)
 	  case IE_QWORD:
 	    if(len < 8) goto error; /* overflow */
 
-	    ((u_int64_p_t *)(ptr))->data =
-	      htole64(((u_int64_p_t *)(ie))->data);
+	    ((uint64_p_t *)(ptr))->data =
+	      htole64(((uint64_p_t *)(ie))->data);
 	    ie = ADD_BYTES(ie, 8);
 	    ptr = ADD_BYTES(ptr, 8);
 	    len -= 8;
@@ -2269,7 +2288,7 @@ capi20_encode(void *ptr, uint16_t len, void *ie)
 	      register uint16_t temp;
 	      register void *var;
 
-	      temp = ((u_int16_p_t *)(ie))->data;
+	      temp = ((uint16_p_t *)(ie))->data;
 	      ie = ADD_BYTES(ie, 2);
 	      var = ((void_p_t *)(ie))->data;
 	      ie = ADD_BYTES(ie, sizeof(void *));
@@ -2357,7 +2376,7 @@ capi20_encode(void *ptr, uint16_t len, void *ie)
 	    {
 	      register uint16_t temp;
 
-	      temp = ((u_int16_p_t *)(ie))->data;
+	      temp = ((uint16_p_t *)(ie))->data;
 
 	      if(len < temp) goto error; /* overflow */
 
