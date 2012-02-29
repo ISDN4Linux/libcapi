@@ -32,13 +32,13 @@ OSNAME!= uname
 
 PREFIX?=	/usr/local
 LOCALBASE?=	/usr/local
-BINDIR=		${PREFIX}/sbin
-MANDIR=		${PREFIX}/man/man
-LIBDIR=		${PREFIX}/lib
-INCLUDEDIR=	${PREFIX}/include
+BINDIR?=	${PREFIX}/sbin
+MANDIR?=	${PREFIX}/man/man
+LIBDIR?=	${PREFIX}/lib
+INCLUDEDIR?=	${PREFIX}/include
 
 LIB=		capi20
-SHLIB_MAJOR=	2
+SHLIB_MAJOR=	1
 SHLIB_MINOR=	0
 
 .if (${OSNAME} != NetBSD)
