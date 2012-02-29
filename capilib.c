@@ -278,6 +278,21 @@ capi20_be_alloc_i4b(struct capi20_backend **cbe_pp)
 	return (0);
 }
 
+#ifndef HAVE_BINTEC
+uint16_t
+capi20_be_alloc_bintec(const char *hostname, const char *servname,
+    const char *username, const char *password,
+    struct capi20_backend **cbe_pp)
+{
+	if (cbe_pp == NULL)
+		return (CAPI_ERROR_INVALID_PARAM);
+
+	*cbe_pp = NULL;
+
+	return (CAPI_ERROR_UNSUPPORTED_VERSION);
+}
+#endif
+
 /*---------------------------------------------------------------------------*
  *	capi_be_free - Free a CAPI backend
  *

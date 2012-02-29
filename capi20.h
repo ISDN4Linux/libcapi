@@ -49,8 +49,11 @@
 #define _CAPI20_H_
 
 #include <sys/cdefs.h>
-#include <sys/types.h>
 #include <sys/endian.h>
+
+#if !defined(_KERNEL)
+#include <stdint.h>
+#endif
 
 #ifndef __packed
 #define __packed __attribute__((__packed__))
