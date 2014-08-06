@@ -218,6 +218,9 @@ capilib_client_do_sync_cmd(struct app_softc *sc, uint8_t cmd, void *data, int le
 	return (0);
 }
 
+#define	CAPI_FWD(x) (x) = htole32(x)
+#define	CAPI_REV(x) (x) = le32toh(x)
+
 /*---------------------------------------------------------------------------*
  *	capilib_client_do_ioctl - remote CAPI IOCTL wrapper
  *
@@ -241,28 +244,78 @@ capilib_client_do_ioctl(struct app_softc *sc, uint32_t cmd, void *data)
 		return (ioctl(sc->sc_fd, FIONBIO, data));
 
 	case CAPI_REGISTER_REQ:
+		if (1) {
+			struct capi_register_req *req = data;
+			CAPI_FWD(req->max_logical_connections);
+			CAPI_FWD(req->max_b_data_blocks);
+			CAPI_FWD(req->max_b_data_len);
+			CAPI_FWD(req->max_msg_data_size);
+			CAPI_FWD(req->app_id);
+			req->pUserName = NULL;
+			req->pPassWord = NULL;
+		}
 		error = capilib_client_do_sync_cmd(sc, CAPISERVER_CMD_CAPI_REGISTER,
 		    data, IOCPARM_LEN(cmd));
+		if (1) {
+			struct capi_register_req *req = data;
+			CAPI_REV(req->max_logical_connections);
+			CAPI_REV(req->max_b_data_blocks);
+			CAPI_REV(req->max_b_data_len);
+			CAPI_REV(req->max_msg_data_size);
+			CAPI_REV(req->app_id);
+		}
 		break;
 
 	case CAPI_GET_MANUFACTURER_REQ:
+		if (1) {
+			uint32_t *pcontroller = data;
+			CAPI_FWD(*pcontroller);
+		}
 		error = capilib_client_do_sync_cmd(sc, CAPISERVER_CMD_CAPI_MANUFACTURER,
 		    data, IOCPARM_LEN(cmd));
+		if (1) {
+			uint32_t *pcontroller = data;
+			CAPI_REV(*pcontroller);
+		}
 		break;
 
 	case CAPI_GET_VERSION_REQ:
+		if (1) {
+			uint32_t *pcontroller = data;
+			CAPI_FWD(*pcontroller);
+		}
 		error = capilib_client_do_sync_cmd(sc, CAPISERVER_CMD_CAPI_VERSION,
 		    data, IOCPARM_LEN(cmd));
+		if (1) {
+			uint32_t *pcontroller = data;
+			CAPI_REV(*pcontroller);
+		}
 		break;
 
 	case CAPI_GET_SERIAL_REQ:
+		if (1) {
+			uint32_t *pcontroller = data;
+			CAPI_FWD(*pcontroller);
+		}
 		error = capilib_client_do_sync_cmd(sc, CAPISERVER_CMD_CAPI_SERIAL,
 		    data, IOCPARM_LEN(cmd));
+		if (1) {
+			uint32_t *pcontroller = data;
+			CAPI_REV(*pcontroller);
+		}
 		break;
 
 	case CAPI_GET_PROFILE_REQ:
+		if (1) {
+			uint32_t *pcontroller = data;
+			CAPI_FWD(*pcontroller);
+		}
 		error = capilib_client_do_sync_cmd(sc, CAPISERVER_CMD_CAPI_PROFILE,
 		    data, IOCPARM_LEN(cmd));
+		if (1) {
+			uint32_t *pcontroller = data;
+			CAPI_REV(*pcontroller);
+		}
 		break;
 
 	case CAPI_SET_STACK_VERSION_REQ:
