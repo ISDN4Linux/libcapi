@@ -67,6 +67,7 @@ enum {
 	CAPISERVER_CMD_CAPI_VERSION,
 	CAPISERVER_CMD_CAPI_SERIAL,
 	CAPISERVER_CMD_CAPI_PROFILE,
+	CAPISERVER_CMD_CAPI_START,
 };
 
 /*---------------------------------------------------------------------------*
@@ -251,8 +252,6 @@ capilib_client_do_ioctl(struct app_softc *sc, uint32_t cmd, void *data)
 			CAPI_FWD(req->max_b_data_len);
 			CAPI_FWD(req->max_msg_data_size);
 			CAPI_FWD(req->app_id);
-			req->pUserName = NULL;
-			req->pPassWord = NULL;
 		}
 		error = capilib_client_do_sync_cmd(sc, CAPISERVER_CMD_CAPI_REGISTER,
 		    data, IOCPARM_LEN(cmd));
@@ -318,9 +317,13 @@ capilib_client_do_ioctl(struct app_softc *sc, uint32_t cmd, void *data)
 		}
 		break;
 
+	case CAPI_START_D_CHANNEL_REQ:
+		error = capilib_client_do_sync_cmd(sc, CAPISERVER_CMD_CAPI_START,
+		    data, IOCPARM_LEN(cmd));
+		break;
+
 	case CAPI_SET_STACK_VERSION_REQ:
 	case CAPI_IOCTL_TEST_REQ:
-	case CAPI_START_D_CHANNEL_REQ:
 		errno = 0;
 		return (0);
 	default:
