@@ -44,6 +44,8 @@
 #include <sys/filio.h>
 #include <sys/socket.h>
 #include <sys/ioccom.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <poll.h>
 #include <errno.h>
 #include <err.h>
