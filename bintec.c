@@ -372,6 +372,10 @@ capilib_alloc_app_bintec(struct capi20_backend *cbe)
 	    if (s < 0) {
 		continue;
 	    }
+	    if (1) {
+		int flag = 1;
+		setsockopt(s, IPPROTO_TCP, TCP_NODELAY, &flag, (int)sizeof(flag));
+	    }
 	    if (connect(s, res->ai_addr, res->ai_addrlen) < 0) {
 		close(s);
 		s = -1;
