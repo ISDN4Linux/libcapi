@@ -521,7 +521,7 @@ capilib_bintec_do_ioctl(struct app_softc *sc, uint32_t cmd, void *data)
 
 	case CAPI_REGISTER_REQ: {
 
-	    struct capi_register_req *ptr = data;
+	    struct capi_register_sw_req *ptr = data;
 
 	    CAPI_INIT(CAPI_BINTEC_CONTROL_REQ, &req.ctrl);
 	    CAPI_INIT(CAPI_BINTEC_CONTROL_CONF, &conf.ctrl);
@@ -595,10 +595,10 @@ capilib_bintec_do_ioctl(struct app_softc *sc, uint32_t cmd, void *data)
 	    CAPI_INIT(CAPI_BINTEC_REGISTER_REQ, &req.reg);
 	    CAPI_INIT(CAPI_BINTEC_REGISTER_CONF, &conf.reg);
 
-	    req.reg.wNMess = ptr->max_msg_data_size;
-	    req.reg.wNConn = ptr->max_logical_connections;
-	    req.reg.wNDBlock = ptr->max_b_data_blocks;
-	    req.reg.wDBlockSize = ptr->max_b_data_len;
+	    req.reg.wNMess = htole16(ptr->req.max_msg_data_size);
+	    req.reg.wNConn = htole16(ptr->req.max_logical_connections);
+	    req.reg.wNDBlock = htole16(ptr->req.max_b_data_blocks);
+	    req.reg.wDBlockSize = htole16(ptr->req.max_b_data_len);
 	    req.reg.bVersion = 2; /* CAPI 2.0 */
 
 	    error = capilib_bintec_do_cmd(sc,
@@ -612,7 +612,7 @@ capilib_bintec_do_ioctl(struct app_softc *sc, uint32_t cmd, void *data)
 	    if (error) {
 	      break;
 	    }
-	    ptr->app_id = 1; /* dummy */
+	    ptr->req.app_id = 1; /* dummy */
 	    break;
 	}
 

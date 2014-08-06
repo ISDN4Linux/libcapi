@@ -443,7 +443,7 @@ capi20_register(struct capi20_backend *cbe,
 {
 	struct app_softc *sc;
 	struct data_buffer *mp;
-	struct capi_register_req req;
+	struct capi_register_sw_req req;
 	uint32_t size;
 	uint32_t max_msg_data_size;
 	int32_t temp = 1;
@@ -476,10 +476,10 @@ capi20_register(struct capi20_backend *cbe,
          sizeof(mp->msg) + max_b_data_len;
 
 	/* register this application */
-	req.max_logical_connections = max_logical_connections;
-	req.max_b_data_blocks       = max_b_data_blocks;
-	req.max_b_data_len          = max_b_data_len;
-	req.max_msg_data_size       = max_msg_data_size;
+	req.req.max_logical_connections = max_logical_connections;
+	req.req.max_b_data_blocks       = max_b_data_blocks;
+	req.req.max_b_data_len          = max_b_data_len;
+	req.req.max_msg_data_size       = max_msg_data_size;
 	req.pUserName               = cbe->sUserName;
 	req.pPassWord               = cbe->sPassWord;
 
@@ -488,21 +488,21 @@ capi20_register(struct capi20_backend *cbe,
 	    return CAPI_ERROR_CAPI_NOT_INSTALLED;
 	}
 
-	if ((req.max_b_data_len != max_b_data_len) ||
-	    (req.max_msg_data_size != max_msg_data_size)) {
+	if ((req.req.max_b_data_len != max_b_data_len) ||
+	    (req.req.max_msg_data_size != max_msg_data_size)) {
 	    capilib_free_app(sc);
 	    return CAPI_ERROR_INVALID_BUFFER_SIZE;
 	}
 
 	sc->sc_msg_data_size = max_msg_data_size;
-	sc->sc_app_id_real = req.app_id;
-	sc->sc_max_connections = req.max_logical_connections;
+	sc->sc_app_id_real = req.req.app_id;
+	sc->sc_max_connections = req.req.max_logical_connections;
 
 	sc->sc_msg_size = 
-	  sizeof(*mp) + req.max_b_data_len;
+	  sizeof(*mp) + req.req.max_b_data_len;
 
-	size = (req.max_logical_connections *
-		req.max_b_data_blocks) + 1;
+	size = (req.req.max_logical_connections *
+		req.req.max_b_data_blocks) + 1;
 
 	if((size < 1) ||
 	   (size > 65535) || 

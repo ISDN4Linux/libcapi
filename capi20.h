@@ -1820,17 +1820,20 @@ union capi_struct_encoded {
  * host endian format:
  */
 struct capi_register_req {
-
   /* input parameters */
   uint32_t max_logical_connections;
   uint32_t max_b_data_blocks;
   uint32_t max_b_data_len;
   uint32_t max_msg_data_size;
-  const char *pUserName; /* zero terminated string */
-  const char *pPassWord; /* zero terminated string */
 
   /* result parameters */
   uint32_t app_id;
+};
+
+struct capi_register_sw_req {
+  struct capi_register_req req;
+  const char *pUserName; /* zero terminated string */
+  const char *pPassWord; /* zero terminated string */
 };
 
 #define CAPI_REGISTER_REQ _IOWR('C', 1, struct capi_register_req)
