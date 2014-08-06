@@ -725,6 +725,7 @@ capilib_bintec_do_ioctl(struct app_softc *sc, uint32_t cmd, void *data)
 	case CAPI_SET_STACK_VERSION_REQ:
 	case CAPI_IOCTL_TEST_REQ:
 	case CAPI_START_D_CHANNEL_REQ:
+	    errno = 0;
 	    return (0);
 
 	default:

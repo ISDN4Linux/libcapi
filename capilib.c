@@ -62,6 +62,34 @@
 
 static struct app_softc *app_sc_root;
 
+int
+capilib_read(int fd, char *buf, int len)
+{
+	int retval = 0;
+
+	while (len > 0) {
+		int delta;
+
+		delta = read(fd, buf, len);
+		if (delta < 0) {
+			if (errno == EWOULDBLOCK) {
+				struct pollfd  pollfd;
+				pollfd.fd = fd;
+				pollfd.events = (POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI | 
+				    POLLERR | POLLHUP | POLLNVAL);
+				if (poll(&pollfd, 1, -1) < 0)
+					return (-1);
+				continue;
+			}
+			return (-1);
+		}
+		buf += delta;
+		len -= delta;
+		retval += delta;
+	}
+	return (retval);
+}
+
 static struct app_softc *
 capilib_find_app_by_id(uint32_t app_id)
 {
@@ -221,6 +249,10 @@ capilib_do_ioctl_sub(struct app_softc *sc, uint32_t cmd, void *data)
 	case CAPI_BACKEND_TYPE_BINTEC:
 	    return (capilib_bintec_do_ioctl(sc, cmd, data));
 #endif
+#ifdef HAVE_CAPI_CLIENT:
+	case CAPI_BACKEND_TYPE_CLIENT:
+	    return (capilib_client_do_ioctl(sc, cmd, data));
+#endif
 	default:
 	    return (-1);
 	}
@@ -293,6 +325,20 @@ capi20_be_alloc_bintec(const char *hostname, const char *servname,
 }
 #endif
 
+#ifndef HAVE_CAPI_CLIENT
+uint16_t
+capi20_be_alloc_client(const char *hostname, const char *servname,
+    struct capi20_backend **cbe_pp)
+{
+	if (cbe_pp == NULL)
+		return (CAPI_ERROR_INVALID_PARAM);
+
+	*cbe_pp = NULL;
+
+	return (CAPI_ERROR_UNSUPPORTED_VERSION);
+}
+#endif
+
 /*---------------------------------------------------------------------------*
  *	capi_be_free - Free a CAPI backend
  *
@@ -350,6 +396,11 @@ capilib_alloc_app(struct capi20_backend *cbe)
 #ifdef HAVE_BINTEC
 	case CAPI_BACKEND_TYPE_BINTEC:
 		sc = capilib_alloc_app_bintec(cbe);
+		break;
+#endif
+#ifdef HAVE_CAPI_CLIENT
+	case CAPI_BACKEND_TYPE_CLIENT:
+		sc = capilib_alloc_app_client(cbe);
 		break;
 #endif
 	default:
@@ -670,14 +721,12 @@ capi20_put_message(uint32_t app_id, void *buf_ptr)
 	HEADER_APP(pmsg) = sc->sc_app_id_real;
 
 	switch (sc->sc_backend) {
-#ifdef HAVE_BINTEC
+#if defined(HAVE_BINTEC) || defined(HAVE_CAPI_CLIENT)
 	uint32_t temp;
 #endif
-
 #ifdef HAVE_BINTEC
-	case CAPI_BACKEND_TYPE_BINTEC:	  
-		temp = (iov[1].iov_len + 
-			iov[2].iov_len) + 2;
+	case CAPI_BACKEND_TYPE_BINTEC:
+		temp = (iov[1].iov_len + iov[2].iov_len) + 2;
 
 		if (temp > 65535) {
 		    /* fatal error */
@@ -700,6 +749,27 @@ capi20_put_message(uint32_t app_id, void *buf_ptr)
 		iov[0].iov_len = 2; /* bytes */
 		break;
 #endif
+#ifdef HAVE_CAPI_CLIENT
+	case CAPI_BACKEND_TYPE_CLIENT:
+		temp = (iov[1].iov_len + iov[2].iov_len);
+
+		if (temp > 65535) {
+			/* fatal error */
+			error = CAPI_ERROR_ILLEGAL_MSG_PARAMETER;
+			goto done;
+		}
+
+		/* header prefixes each message */
+
+		sc->sc_temp[0] = temp & 0xFF;
+		sc->sc_temp[1] = (temp >> 8) & 0xFF;
+		sc->sc_temp[2] = 0;
+		sc->sc_temp[3] = 0;
+
+		iov[0].iov_base = (void *)(sc->sc_temp);
+		iov[0].iov_len = 4;	/* bytes */
+		break;
+#endif
 	default:
 		iov[0].iov_base = NULL;
 		iov[0].iov_len = 0;
@@ -719,7 +789,7 @@ capi20_put_message(uint32_t app_id, void *buf_ptr)
 
 	    break;
 	}
-#ifdef HAVE_BINTEC
+#if defined(HAVE_BINTEC) || defined(HAVE_CAPI_CLIENT)
  done:
 #endif
 	/* restore application ID in case the 
@@ -747,14 +817,16 @@ capi20_put_message(uint32_t app_id, void *buf_ptr)
 int
 capilib_get_message_sub(struct app_softc *sc, void *buf, uint16_t msg_len)
 {
+#if defined(HAVE_BINTEC) || defined(HAVE_CAPI_CLIENT)
+	uint16_t temp;
+#endif
 	int len;
 
+	switch (sc->sc_backend) {
 #ifdef HAVE_BINTEC
-	if (sc->sc_backend == CAPI_BACKEND_TYPE_BINTEC) {
-		uint16_t temp;
-
+	case CAPI_BACKEND_TYPE_BINTEC:
 	    /* need to get the length bytes first */
-	    while ((len = read(sc->sc_fd, sc->sc_temp, 2)) < 0) {
+	    while ((len = capilib_read(sc->sc_fd, sc->sc_temp, 2)) < 0) {
 	        if (errno == EINTR) {
 		    continue;
 		}
@@ -777,12 +849,50 @@ capilib_get_message_sub(struct app_softc *sc, void *buf, uint16_t msg_len)
 	    } else {
 	        msg_len = temp;
 	    }
-	}
+	    while ((len = capilib_read(sc->sc_fd, buf, msg_len)) < 0) {
+		if (errno == EINTR)
+			continue;
+		break;
+	    }
+	    break;
 #endif
+#ifdef HAVE_CAPI_CLIENT
+	case CAPI_BACKEND_TYPE_CLIENT:
+	    /* need to get the header bytes first */
+	    while ((len = capilib_read(sc->sc_fd, sc->sc_temp, 4)) < 0) {
+	        if (errno == EINTR) {
+		    continue;
+		}
+		return (-1);
+	    }
 
-	while ((len = read(sc->sc_fd, buf, msg_len)) < 0) {
-	    if (errno == EINTR) {
-	        continue;
+	    if (len != 4) {
+	        /* An invalid length is an irrecoverable error */
+	        errno = ENODEV;
+	        return (-1);
+	    }
+
+	    temp = sc->sc_temp[0] | (sc->sc_temp[1] << 8);
+
+	    if (temp > msg_len) {
+		/* An invalid length is an irrecoverable error */
+	        errno = ENODEV;
+		return (-1);
+	    } else {
+	        msg_len = temp;
+	    }
+	    while ((len = capilib_read(sc->sc_fd, buf, msg_len)) < 0) {
+		if (errno == EINTR)
+			continue;
+		break;
+	    }
+	    break;
+#endif
+	default:
+	    while ((len = read(sc->sc_fd, buf, msg_len)) < 0) {
+		if (errno == EINTR)
+			continue;
+		break;
 	    }
 	    break;
 	}

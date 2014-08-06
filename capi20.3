@@ -28,12 +28,13 @@
 .\" $Id: capi20.3,v 1.4.4.1 2005/05/27 16:29:15 thomas Exp $
 .\" Creation date       04.01.2003
 .\"
-.Dd July 14, 2008
+.Dd August 6, 2014
 .Dt CAPI20 3
 .Os
 .Sh NAME
 .
 .
+.Nm capi20_be_alloc_client,
 .Nm capi20_be_alloc_bintec,
 .Nm capi20_be_alloc_i4b,
 .Nm capi20_be_free,
@@ -67,6 +68,13 @@ CAPI 2.0 Access Library (libcapi20, -lcapi20)
 .
 .
 .In i4b/include/capi20.h
+.
+.Ft "uint16_t"
+.Fo "capi20_be_alloc_client"
+.Fa "const char *hostname"
+.Fa "const char *servname"
+.Fa "struct capi20_backend **cbe_pp"
+.Fc
 .
 .Ft "uint16_t"
 .Fo "capi20_be_alloc_bintec"
@@ -216,6 +224,22 @@ environment. They are implemented in the shared library
 .Nm libcapi20 .
 The functions are largely compatible with the CAPI specification for
 other operating systems. There are only minor differences.
+.
+.
+.
+.Pp
+.
+.Fn capi20_be_alloc_client
+will create a new CAPI backend that can be used with a the capiserver application.
+It returns zero on success. The pointer to the new backend is stored
+at the address pointed to by the
+.Fa cbe_pp
+parameter. The
+.Fa hostname ,
+and 
+.Fa servname 
+parameters are forwarded to 
+.Xr getaddrinfo 3 .
 .
 .
 .

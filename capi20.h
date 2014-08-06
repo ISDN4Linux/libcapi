@@ -1915,6 +1915,9 @@ extern uint16_t
 capi20_be_alloc_bintec(const char *hostname, const char *servname, const char *username, const char *password, struct capi20_backend **be_ptr);
 
 extern uint16_t
+capi20_be_alloc_client(const char *hostname, const char *servname, struct capi20_backend **be_ptr);
+
+extern uint16_t
 capi20_be_alloc_i4b(struct capi20_backend **be_ptr);
 
 extern void

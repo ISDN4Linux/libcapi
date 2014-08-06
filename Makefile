@@ -49,9 +49,13 @@ LDADD+=         -lmd
 CFLAGS+=	-D_GNU_SOURCE
 
 SRCS=		capilib.c
-.if defined(HAVE_BINTEC)
+.if defined(HAVE_BINTEC) || defined(HAVE_ALL)
 SRCS+=		bintec.c
 CFLAGS+=	-DHAVE_BINTEC
+.endif
+.if defined(HAVE_CAPI_CLIENT) || defined(HAVE_ALL)
+SRCS+=		capiclient.c
+CFLAGS+=	-DHAVE_CAPI_CLIENT
 .endif
 INCS=		capi20.h
 
@@ -67,9 +71,10 @@ CFLAGS+=	-DHAVE_DEBUG
 CFLAGS+=	-g
 .endif
 
-.if defined(HAVE_MAN)
+.if defined(HAVE_MAN) || defined(HAVE_ALL)
 MAN=		capi20.3
 MLINKS+=	capi20.3 capi.3
+MLINKS+=	capi20.3 capi20_be_alloc_client.3
 MLINKS+=	capi20.3 capi20_be_alloc_bintec.3
 MLINKS+=	capi20.3 capi20_be_alloc_i4b.3
 MLINKS+=	capi20.3 capi20_be_free.3
@@ -95,7 +100,7 @@ MAN=
 
 package:
 
-	make clean cleandepend HAVE_MAN=YES HAVE_BINTEC=YES
+	make clean cleandepend HAVE_MAN=YES HAVE_BINTEC=YES HAVE_CAPI_CLIENT=YES
 
 	tar -cvf temp.tar --exclude="*~" --exclude="*#" \
 		--exclude=".svn" --exclude="*.orig" --exclude="*.rej" \
