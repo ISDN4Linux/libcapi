@@ -203,7 +203,7 @@ capilib_client_do_sync_cmd(struct app_softc *sc, uint8_t cmd, void *data, int le
 		return (-1);
 	if (write(sc->sc_fd, data, len) != len)
 		return (-1);
-	if (capilib_read(sc->sc_fd, header, sizeof(header)) != sizeof(header))
+	if (capilib_read(sc->sc_fd, header, sizeof(header), 0) != sizeof(header))
 		return (-1);
 	if (header[2] != cmd)
 		return (-1);
@@ -212,7 +212,7 @@ capilib_client_do_sync_cmd(struct app_softc *sc, uint8_t cmd, void *data, int le
 	temp = (header[1] << 8) | header[0];
 	if (temp != len)
 		return (-1);
-	if (capilib_read(sc->sc_fd, data, len) != len)
+	if (capilib_read(sc->sc_fd, data, len, 0) != len)
 		return (-1);
 
 	return (0);

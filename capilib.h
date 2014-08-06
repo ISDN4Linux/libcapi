@@ -110,7 +110,7 @@ struct capi20_backend {
 extern int capilib_get_message_sub(struct app_softc *sc, void *buf, uint16_t msg_len);
 extern int capilib_client_do_ioctl(struct app_softc *sc, uint32_t cmd, void *data);
 extern int capilib_bintec_do_ioctl(struct app_softc *sc, uint32_t cmd, void *data);
-extern int capilib_read(int fd, char *buf, int len);
+extern int capilib_read(int fd, char *buf, int len, int first);
 extern struct app_softc * capilib_alloc_app_client(struct capi20_backend *be);
 extern struct app_softc * capilib_alloc_app_bintec(struct capi20_backend *be);
 extern struct app_softc * capilib_alloc_app_sub(struct capi20_backend *be);

@@ -63,7 +63,7 @@
 static struct app_softc *app_sc_root;
 
 int
-capilib_read(int fd, char *buf, int len)
+capilib_read(int fd, char *buf, int len, int first)
 {
 	int retval = 0;
 
@@ -74,11 +74,12 @@ capilib_read(int fd, char *buf, int len)
 		if (delta == 0)
 			return (-1);	/* hangup */
 		if (delta < 0) {
-			if (errno == EWOULDBLOCK) {
+			if (first == 0 && errno == EWOULDBLOCK) {
 				struct pollfd  pollfd;
 				pollfd.fd = fd;
 				pollfd.events = (POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI | 
 				    POLLERR | POLLHUP | POLLNVAL);
+				pollfd.revents = 0;
 				if (poll(&pollfd, 1, -1) < 0)
 					return (-1);
 				continue;
@@ -251,7 +252,7 @@ capilib_do_ioctl_sub(struct app_softc *sc, uint32_t cmd, void *data)
 	case CAPI_BACKEND_TYPE_BINTEC:
 	    return (capilib_bintec_do_ioctl(sc, cmd, data));
 #endif
-#ifdef HAVE_CAPI_CLIENT:
+#ifdef HAVE_CAPI_CLIENT
 	case CAPI_BACKEND_TYPE_CLIENT:
 	    return (capilib_client_do_ioctl(sc, cmd, data));
 #endif
@@ -828,7 +829,7 @@ capilib_get_message_sub(struct app_softc *sc, void *buf, uint16_t msg_len)
 #ifdef HAVE_BINTEC
 	case CAPI_BACKEND_TYPE_BINTEC:
 	    /* need to get the length bytes first */
-	    while ((len = capilib_read(sc->sc_fd, sc->sc_temp, 2)) < 0) {
+	    while ((len = capilib_read(sc->sc_fd, sc->sc_temp, 2, 1)) < 0) {
 	        if (errno == EINTR) {
 		    continue;
 		}
@@ -851,7 +852,7 @@ capilib_get_message_sub(struct app_softc *sc, void *buf, uint16_t msg_len)
 	    } else {
 	        msg_len = temp;
 	    }
-	    while ((len = capilib_read(sc->sc_fd, buf, msg_len)) < 0) {
+	    while ((len = capilib_read(sc->sc_fd, buf, msg_len, 0)) < 0) {
 		if (errno == EINTR)
 			continue;
 		break;
@@ -861,7 +862,7 @@ capilib_get_message_sub(struct app_softc *sc, void *buf, uint16_t msg_len)
 #ifdef HAVE_CAPI_CLIENT
 	case CAPI_BACKEND_TYPE_CLIENT:
 	    /* need to get the header bytes first */
-	    while ((len = capilib_read(sc->sc_fd, sc->sc_temp, 4)) < 0) {
+	    while ((len = capilib_read(sc->sc_fd, sc->sc_temp, 4, 1)) < 0) {
 	        if (errno == EINTR) {
 		    continue;
 		}
@@ -883,7 +884,7 @@ capilib_get_message_sub(struct app_softc *sc, void *buf, uint16_t msg_len)
 	    } else {
 	        msg_len = temp;
 	    }
-	    while ((len = capilib_read(sc->sc_fd, buf, msg_len)) < 0) {
+	    while ((len = capilib_read(sc->sc_fd, buf, msg_len, 0)) < 0) {
 		if (errno == EINTR)
 			continue;
 		break;
