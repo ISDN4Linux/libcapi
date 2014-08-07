@@ -71,8 +71,10 @@ capilib_read(int fd, char *buf, int len, int first)
 		int delta;
 
 		delta = read(fd, buf, len);
-		if (delta == 0)
+		if (delta == 0) {
+			errno = ENODEV;
 			return (-1);	/* hangup */
+		}
 		if (delta < 0) {
 			if (first == 0 && errno == EWOULDBLOCK) {
 				struct pollfd  pollfd;
