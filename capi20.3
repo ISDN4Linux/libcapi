@@ -28,7 +28,7 @@
 .\" $Id: capi20.3,v 1.4.4.1 2005/05/27 16:29:15 thomas Exp $
 .\" Creation date       04.01.2003
 .\"
-.Dd August 6, 2014
+.Dd September 6, 2014
 .Dt CAPI20 3
 .Os
 .Sh NAME
@@ -37,6 +37,7 @@
 .Nm capi20_be_alloc_client,
 .Nm capi20_be_alloc_bintec,
 .Nm capi20_be_alloc_i4b,
+.Nm capi20_be_socket_configure,
 .Nm capi20_be_free,
 .Nm capi20_register ,
 .Nm capi20_release ,
@@ -71,17 +72,11 @@ CAPI 2.0 Access Library (libcapi20, -lcapi20)
 .
 .Ft "uint16_t"
 .Fo "capi20_be_alloc_client"
-.Fa "const char *hostname"
-.Fa "const char *servname"
 .Fa "struct capi20_backend **cbe_pp"
 .Fc
 .
 .Ft "uint16_t"
 .Fo "capi20_be_alloc_bintec"
-.Fa "const char *hostname"
-.Fa "const char *servname"
-.Fa "const char *username"
-.Fa "const char *password"
 .Fa "struct capi20_backend **cbe_pp"
 .Fc
 .
@@ -89,6 +84,16 @@ CAPI 2.0 Access Library (libcapi20, -lcapi20)
 .Ft "uint16_t"
 .Fo "capi20_be_alloc_i4b"
 .Fa "struct capi20_backend **cbe_pp"
+.Fc
+.
+.
+.Ft "uint16_t"
+.Fo "capi20_be_socket_configure"
+.Fa "struct capi20_backend *cbe"
+.Fa "const char *hostname"
+.Fa "const char *portname"
+.Fa "const char *username"
+.Fa "const char *password"
 .Fc
 .
 .
@@ -234,10 +239,29 @@ will create a new CAPI backend that can be used with a the capiserver applicatio
 It returns zero on success. The pointer to the new backend is stored
 at the address pointed to by the
 .Fa cbe_pp
-parameter. The
+parameter.
+.
+.
+.
+.Pp
+.
+.Fn capi20_be_socket_configure
+will configure the socket based CAPI backends.
+The
 .Fa hostname ,
+.Fa portname ,
+.Fa username
+and
+.Fa password
+arguments will be stored in the backed and used when registering
+applications.
+If an argument is NULL, defaults will be used.
+The string length limitations are 64, 16, 64 and 64 characters
+respectivly including the termination zero for the arguments.
+The
+.Fa hostname
 and 
-.Fa servname 
+.Fa portname 
 parameters are forwarded to 
 .Xr getaddrinfo 3 .
 .
@@ -250,19 +274,7 @@ will create a new CAPI backend that can be used with a BinTec remote
 CAPI router. It returns zero on success. The pointer to the new
 backend is stored at the address pointed to by the
 .Fa cbe_pp
-parameter. The
-.Fa hostname ,
-and 
-.Fa servname 
-parameters are forwarded to 
-.Xr getaddrinfo 3 .
-.Fa username
-and
-.Fa password
-parameters give the username and password that should be used when
-authenticating towards the BinTec router.  The string length
-limitations are 64, 16, 64 and 64 characters respectivly including the
-termination zero for the arguments.
+parameter.
 .
 .
 .

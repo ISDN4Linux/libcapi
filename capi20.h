@@ -1915,13 +1915,17 @@ struct capi20_dr_prot {
 };
 
 extern uint16_t
-capi20_be_alloc_bintec(const char *hostname, const char *servname, const char *username, const char *password, struct capi20_backend **be_ptr);
+capi20_be_alloc_bintec(struct capi20_backend **be_ptr);
 
 extern uint16_t
-capi20_be_alloc_client(const char *hostname, const char *servname, struct capi20_backend **be_ptr);
+capi20_be_alloc_client(struct capi20_backend **be_ptr);
 
 extern uint16_t
 capi20_be_alloc_i4b(struct capi20_backend **be_ptr);
+
+extern uint16_t
+capi20_be_socket_configure(struct capi20_backend *,
+    const char *, const char *, const char *, const char *);
 
 extern void
 capi20_be_free(struct capi20_backend *cbe);

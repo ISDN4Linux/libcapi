@@ -297,18 +297,16 @@ capi20_be_alloc_i4b(struct capi20_backend **cbe_pp)
 {
 	struct capi20_backend *cbe;
 
-	if (cbe_pp == NULL) {
+	if (cbe_pp == NULL)
 		return (CAPI_ERROR_INVALID_PARAM);
-	}
 
 	cbe = malloc(sizeof(*cbe));
-	if(cbe == NULL) {
+	if(cbe == NULL)
 		return (CAPI_ERROR_OS_RESOURCE_ERROR);
-	}
 
 	*cbe_pp = cbe;
 
-	bzero(cbe, sizeof(*cbe));
+	memset(cbe, 0, sizeof(*cbe));
 
 	cbe->bBackendType = CAPI_BACKEND_TYPE_I4B;
 
@@ -317,9 +315,7 @@ capi20_be_alloc_i4b(struct capi20_backend **cbe_pp)
 
 #ifndef HAVE_BINTEC
 uint16_t
-capi20_be_alloc_bintec(const char *hostname, const char *servname,
-    const char *username, const char *password,
-    struct capi20_backend **cbe_pp)
+capi20_be_alloc_bintec(struct capi20_backend **cbe_pp)
 {
 	if (cbe_pp == NULL)
 		return (CAPI_ERROR_INVALID_PARAM);
@@ -332,8 +328,7 @@ capi20_be_alloc_bintec(const char *hostname, const char *servname,
 
 #ifndef HAVE_CAPI_CLIENT
 uint16_t
-capi20_be_alloc_client(const char *hostname, const char *servname,
-    struct capi20_backend **cbe_pp)
+capi20_be_alloc_client(struct capi20_backend **cbe_pp)
 {
 	if (cbe_pp == NULL)
 		return (CAPI_ERROR_INVALID_PARAM);
@@ -343,6 +338,55 @@ capi20_be_alloc_client(const char *hostname, const char *servname,
 	return (CAPI_ERROR_UNSUPPORTED_VERSION);
 }
 #endif
+
+/*---------------------------------------------------------------------------*
+ *	capi20_be_socket_configure - Additional parameters backends
+ *
+ * @param hostname       Pointer to zero terminated host name string or NULL.
+ * @param portname       Pointer to zero terminated service name string or NULL.
+ * @param username       Pointer to zero terminated username string or NULL.
+ * @param password       Pointer to zero terminated password string or NULL.
+ *
+ * @param cbe            Pointer to backend.
+ *
+ * @retval 0             Backend configuration was successful.
+ *
+ * @retval Else          An error happened.
+ *---------------------------------------------------------------------------*/
+uint16_t
+capi20_be_socket_configure(struct capi20_backend *cbe, const char *hostname,
+    const char *portname, const char *username, const char *password)
+{
+	if (hostname == NULL || hostname[0] == 0)
+		hostname = "localhost";
+	if (username == NULL)
+		username = "";
+	if (password == NULL)
+		password = "";
+
+	switch (cbe->bBackendType) {
+	case CAPI_BACKEND_TYPE_CLIENT:
+		/* set default TCP port, if any */
+		if (portname == NULL || portname[0] == 0)
+			portname = "2663";
+		break;
+	case CAPI_BACKEND_TYPE_BINTEC:
+		/* set default TCP port, if any */
+		if (portname == NULL || portname[0] == 0)
+			portname = "2662";
+		break;
+	default:
+		if (portname == NULL)
+			portname = "";
+		break;
+	}
+
+	strlcpy(cbe->sHostName, hostname, sizeof(cbe->sHostName));
+	strlcpy(cbe->sServName, portname, sizeof(cbe->sServName));
+	strlcpy(cbe->sUserName, username, sizeof(cbe->sUserName));
+	strlcpy(cbe->sPassWord, password, sizeof(cbe->sPassWord));
+	return (0);
+}
 
 /*---------------------------------------------------------------------------*
  *	capi_be_free - Free a CAPI backend

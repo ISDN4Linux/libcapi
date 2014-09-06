@@ -73,10 +73,6 @@ enum {
 /*---------------------------------------------------------------------------*
  *	capi20_be_alloc_client - Allocate a CAPI remote client backend
  *
- * @param hostname       Pointer to zero terminated host name string.
- *
- * @param portname       Pointer to zero terminated port name string.
- *
  * @param cbe_pp	 Pointer to pointer that should be pointed to backend.
  *
  * @retval 0             Backend allocation was successful.
@@ -84,17 +80,12 @@ enum {
  * @retval Else          An error happened.
  *---------------------------------------------------------------------------*/
 uint16_t
-capi20_be_alloc_client(const char *hostname, const char *portname,
-    struct capi20_backend **cbe_pp)
+capi20_be_alloc_client(struct capi20_backend **cbe_pp)
 {
 	struct capi20_backend *cbe;
 
-	if ((cbe_pp == NULL) || (hostname == NULL))
+	if (cbe_pp == NULL)
 		return (CAPI_ERROR_INVALID_PARAM);
-
-	/* set default TCP port, if any */
-	if (portname == NULL || portname[0] == 0)
-		portname = "2663";
 
 	cbe = malloc(sizeof(*cbe));
 	if(cbe == NULL)
@@ -102,11 +93,9 @@ capi20_be_alloc_client(const char *hostname, const char *portname,
 
 	*cbe_pp = cbe;
 
-	bzero(cbe, sizeof(*cbe));
+	memset(cbe, 0, sizeof(*cbe));
 
 	cbe->bBackendType = CAPI_BACKEND_TYPE_CLIENT;
-	strlcpy(cbe->sHostName, hostname, sizeof(cbe->sHostName));
-	strlcpy(cbe->sServName, portname, sizeof(cbe->sServName));
 
 	return (0);
 }

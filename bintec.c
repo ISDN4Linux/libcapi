@@ -274,14 +274,6 @@ CAPI_BINTEC_MAKE_STRUCT(BINTEC_CONTROL)
 /*---------------------------------------------------------------------------*
  *	capi20_be_alloc_bintec - Allocate a BinTec CAPI backend
  *
- * @param hostname       Pointer to zero terminated host name string.
- *
- * @param servname       Pointer to zero terminated service name string.
- *
- * @param username       Pointer to zero terminated username string.
- *
- * @param password       Pointer to zero terminated password string.
- *
  * @param cbe_pp	 Pointer to pointer that should be pointed to backend.
  *
  * @retval 0             Backend allocation was successful.
@@ -289,45 +281,22 @@ CAPI_BINTEC_MAKE_STRUCT(BINTEC_CONTROL)
  * @retval Else          An error happened.
  *---------------------------------------------------------------------------*/
 uint16_t
-capi20_be_alloc_bintec(const char *hostname, const char *servname, 
-    const char *username, const char *password, struct capi20_backend **cbe_pp)
+capi20_be_alloc_bintec(struct capi20_backend **cbe_pp)
 {
 	struct capi20_backend *cbe;
 
-	if ((cbe_pp == NULL) ||
-	    (hostname == NULL)) {
+	if (cbe_pp == NULL)
 		return (CAPI_ERROR_INVALID_PARAM);
-	}
-
-	/* set default TCP port, if any */
-	if ((servname == NULL) || (servname[0] == 0)) {
-	    servname = "2662";
-	}
-
-	/* set default username, if any */
-	if (username == NULL) {
-	    username = "";
-	}
-
-	/* set default password, if any */
-	if (password == NULL) {
-	    password = "";
-	}
 
 	cbe = malloc(sizeof(*cbe));
-	if(cbe == NULL) {
+	if(cbe == NULL)
 		return (CAPI_ERROR_OS_RESOURCE_ERROR);
-	}
 
 	*cbe_pp = cbe;
 
-	bzero(cbe, sizeof(*cbe));
+	memset(cbe, 0, sizeof(*cbe));
 
 	cbe->bBackendType = CAPI_BACKEND_TYPE_BINTEC;
-	strlcpy(cbe->sHostName, hostname, sizeof(cbe->sHostName));
-	strlcpy(cbe->sServName, servname, sizeof(cbe->sServName));
-	strlcpy(cbe->sUserName, username, sizeof(cbe->sUserName));
-	strlcpy(cbe->sPassWord, password, sizeof(cbe->sPassWord));
 
 	return (0);
 }

@@ -26,7 +26,7 @@
 # Makefile for shared CAPI access library
 #
 
-VERSION=2.0.1
+VERSION=2.0.2
 
 OSNAME!= uname
 
@@ -77,6 +77,7 @@ MLINKS+=	capi20.3 capi.3
 MLINKS+=	capi20.3 capi20_be_alloc_client.3
 MLINKS+=	capi20.3 capi20_be_alloc_bintec.3
 MLINKS+=	capi20.3 capi20_be_alloc_i4b.3
+MLINKS+=	capi20.3 capi20_be_socket_configure.3
 MLINKS+=	capi20.3 capi20_be_free.3
 MLINKS+=	capi20.3 capi20_register.3
 MLINKS+=	capi20.3 capi20_release.3
