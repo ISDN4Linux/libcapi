@@ -98,7 +98,7 @@ typedef struct uint64_p uint64_p_t;
 
 /* global defines */
 
-#define CAPI_STACK_VERSION     211
+#define CAPI_STACK_VERSION     212
 #define CAPI_APPLICATION_MAX   0x80 /* units */
 #define CAPI_DEVICE_NAME       "/dev/capi20"
 #define CAPI_SHLIB_BASENAME    "libcapi20.so"
