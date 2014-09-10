@@ -105,7 +105,7 @@ package:
 
 	tar -cvf temp.tar --exclude="*~" --exclude="*#" \
 		--exclude=".svn" --exclude="*.orig" --exclude="*.rej" \
-		Makefile bintec.c capilib.c capi20.3 capi20.h \
+		Makefile bintec.c capilib.c capiclient.c capi20.3 capi20.h \
 		capilib.h i4b_cause.h
 
 	rm -rf libcapi-${VERSION}
