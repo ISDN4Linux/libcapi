@@ -344,8 +344,18 @@ capilib_alloc_app_bintec(struct capi20_backend *cbe)
 		continue;
 	    }
 	    if (1) {
-		int flag = 1;
-		setsockopt(s, IPPROTO_TCP, TCP_NODELAY, &flag, (int)sizeof(flag));
+		int temp;
+
+		temp = 1;
+		setsockopt(s, IPPROTO_TCP, TCP_NODELAY, &temp, (int)sizeof(temp));
+
+		/* use small buffer sizes to force regular ACK-ing */
+		temp = 1500;
+		setsockopt(s, SOL_SOCKET, SO_SNDBUF, &temp, (int)sizeof(temp));
+
+		/* use small buffer sizes to force regular ACK-ing */
+		temp = 1500;
+		setsockopt(s, SOL_SOCKET, SO_RCVBUF, &temp, (int)sizeof(temp));
 	    }
 	    if (connect(s, res->ai_addr, res->ai_addrlen) < 0) {
 		close(s);
