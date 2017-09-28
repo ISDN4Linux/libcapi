@@ -141,24 +141,14 @@ capilib_alloc_app_client(struct capi20_backend *cbe)
 	    if (s < 0) {
 		continue;
 	    }
-	    if (1) {
-		int temp;
-
-		temp = 1;
-		setsockopt(s, IPPROTO_TCP, TCP_NODELAY, &temp, (int)sizeof(temp));
-
-		/* use small buffer sizes to force regular ACK-ing */
-		temp = 1500;
-		setsockopt(s, SOL_SOCKET, SO_SNDBUF, &temp, (int)sizeof(temp));
-
-		/* use small buffer sizes to force regular ACK-ing */
-		temp = 1500;
-		setsockopt(s, SOL_SOCKET, SO_RCVBUF, &temp, (int)sizeof(temp));
-	    }
 	    if (connect(s, res->ai_addr, res->ai_addrlen) < 0) {
 		close(s);
 		s = -1;
 		continue;
+	    }
+	    if (1) {
+		int flag = 1;
+		setsockopt(s, IPPROTO_TCP, TCP_NODELAY, &flag, (int)sizeof(flag));
 	    }
 	    break;
 	}
@@ -192,6 +182,7 @@ static int
 capilib_client_do_sync_cmd(struct app_softc *sc, uint8_t cmd, void *data, int len)
 {
 	uint8_t header[CAPISERVER_HDR_SIZE] __aligned(4);
+	struct iovec iov[2];
 	int temp;
 
 	header[0] = len & 0xFF;
@@ -199,9 +190,12 @@ capilib_client_do_sync_cmd(struct app_softc *sc, uint8_t cmd, void *data, int le
 	header[2] = cmd;
 	header[3] = 0;
 
-	if (write(sc->sc_fd, header, sizeof(header)) != sizeof(header))
-		return (-1);
-	if (write(sc->sc_fd, data, len) != len)
+	iov[0].iov_base = header;
+	iov[0].iov_len = sizeof(header);
+	iov[1].iov_base = data;
+	iov[1].iov_len = len;
+
+	if (writev(sc->sc_fd, iov, 2) != (sizeof(header) + len))
 		return (-1);
 	if (capilib_read(sc->sc_fd, header, sizeof(header), 0) != sizeof(header))
 		return (-1);
